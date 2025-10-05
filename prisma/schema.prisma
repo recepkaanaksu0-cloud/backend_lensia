@@ -1,0 +1,170 @@
+// Prisma Schema for Lensia.ai Photo Generation Workflow
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+// Ana istek modeli
+model GenerationRequest {
+  id                String   @id @default(cuid())
+  userId            String
+  
+  // Kullanıcı yanıtları
+  sector            String
+  platform          String
+  style             String
+  mood              String
+  colors            String   // JSON array string
+  additionalDetails String
+  customTags        String?  // JSON array string
+  additionalNotes   String?
+  
+  // Görsel bilgileri
+  uploadedImageBase64 String @default("")
+  aspectRatio       String   @default("1:1")
+  negativePrompt    String?
+  
+  // Marka kimliği (ileride eklenecek)
+  brandIdentity     String?  // JSON string
+  
+  // İş akışı durumu
+  currentStep       String   @default("step1_prompt_generation") // step1_prompt_generation, step2_ai_generation, step3_user_selection, step4_refinement, completed
+  status            String   @default("pending") // pending, processing, completed, error
+  errorMessage      String?
+  
+  // İlişkiler
+  workflows         Workflow[]
+  generatedPhotos   GeneratedPhoto[]
+  
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+  
+  @@index([userId])
+  @@index([currentStep])
+  @@index([status])
+  @@index([createdAt])
+}
+
+// İş akışı adımları
+model Workflow {
+  id                  String   @id @default(cuid())
+  requestId           String
+  request             GenerationRequest @relation(fields: [requestId], references: [id], onDelete: Cascade)
+  
+  step                String   // step1_prompt_generation, step2_ai_generation, step3_user_selection, step4_refinement
+  stepName            String   // Türkçe adı
+  status              String   @default("pending") // pending, processing, completed, error, skipped
+  progress            Int      @default(0) // 0-100
+  
+  // Adım detayları
+  inputData           String?  // JSON string
+  outputData          String?  // JSON string
+  errorMessage        String?
+  
+  // Prompt oluşturma adımı için
+  generatedPrompt     String?
+  
+  // AI üretim adımı için
+  requestedPhotoCount Int      @default(3)
+  generatedPhotoCount Int      @default(0)
+  
+  startedAt           DateTime?
+  completedAt         DateTime?
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+  
+  @@index([requestId])
+  @@index([step])
+  @@index([status])
+}
+
+// Üretilen fotoğraflar
+model GeneratedPhoto {
+  id                String   @id @default(cuid())
+  requestId         String
+  request           GenerationRequest @relation(fields: [requestId], references: [id], onDelete: Cascade)
+  
+  // Fotoğraf bilgileri
+  photoUrl          String
+  thumbnailUrl      String?
+  prompt            String
+  negativePrompt    String?
+  
+  // Hangi adımda üretildi
+  generationStep    String   // step2_ai_generation (Gemini), step4_refinement (ComfyUI/SD)
+  aiModel           String   // gemini-2.5-flash, stable-diffusion-xl, etc.
+  
+  // Kullanıcı etkileşimi
+  isSelected        Boolean  @default(false)
+  userFeedback      String?  // JSON string: {like: boolean, comments: string, requestedChanges: []}
+  
+  // Rafine işlemleri
+  refinements       Refinement[]
+  
+  // Metadata
+  metadata          String?  // JSON string: {width, height, seed, etc.}
+  
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+  
+  @@index([requestId])
+  @@index([generationStep])
+  @@index([isSelected])
+}
+
+// Rafine işlemleri (ComfyUI/Stable Diffusion)
+model Refinement {
+  id                String   @id @default(cuid())
+  photoId           String
+  photo             GeneratedPhoto @relation(fields: [photoId], references: [id], onDelete: Cascade)
+  
+  // İşlem tipi
+  refinementType    String   // upscale, style-transfer, color-correction, background-removal, etc.
+  
+  // ComfyUI job bilgileri
+  comfyuiJobId      String?
+  status            String   @default("pending") // pending, processing, completed, error
+  
+  // Giriş/çıkış
+  inputImageUrl     String
+  outputImageUrl    String?
+  
+  // Parametreler
+  parameters        String?  // JSON string
+  errorMessage      String?
+  
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+  
+  @@index([photoId])
+  @@index([status])
+}
+
+// Eski Job modeli - geriye dönük uyumluluk için
+model Job {
+  id              String   @id @default(cuid())
+  status          String   @default("pending")
+  prompt          String
+  negativePrompt  String?
+  inputImageUrl   String
+  outputImageUrl  String?
+  paramsJson      String
+  errorMessage    String?
+  
+  lensiaJobId     String?  @unique
+  webhookUrl      String?
+  webhookSent     Boolean  @default(false)
+  webhookSentAt   DateTime?
+  
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  
+  @@index([status])
+  @@index([createdAt])
+  @@index([lensiaJobId])
+}

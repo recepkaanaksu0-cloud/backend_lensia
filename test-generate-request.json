@@ -1,0 +1,16 @@
+{
+  "userId": "550e8400-e29b-41d4-a716-446655440000",
+  "userResponses": {
+    "sector": "e-commerce",
+    "platform": "instagram",
+    "style": "modern",
+    "mood": "professional",
+    "colors": ["#1a365d", "#2d3748", "#ffffff"],
+    "additionalDetails": "Ürün fotoğrafı, beyaz arka plan",
+    "customTags": ["product", "clean"],
+    "additionalNotes": "Yüksek çözünürlükte olsun"
+  },
+  "uploadedImageBase64": "data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAwIiBoZWlnaHQ9IjQwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iNDAwIiBoZWlnaHQ9IjQwMCIgZmlsbD0iI2RkZCIvPjx0ZXh0IHg9IjUwJSIgeT0iNTAlIiBmb250LXNpemU9IjI0IiBmaWxsPSIjOTk5IiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBkeT0iLjNlbSI+w5ZybmVrIEfDtnJzZWw8L3RleHQ+PC9zdmc+",
+  "aspectRatio": "1:1",
+  "negativePrompt": "low quality, blurry, distorted"
+}

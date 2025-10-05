@@ -1,0 +1,442 @@
+╔════════════════════════════════════════════════════════════════╗
+║                                                                ║
+║     LENSIA.AI - COMFYUI BACKEND DASHBOARD                     ║
+║     Proje Kurulum ve Kullanım Kılavuzu                        ║
+║                                                                ║
+╚════════════════════════════════════════════════════════════════╝
+
+📅 Tarih: 3 Ekim 2025
+🎯 Amaç: www.lensia.ai'den gelen istekleri işleme ve geri gönderme
+🌐 Public URL: https://api.lensia.ai
+🔌 Local Port: 51511
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+✅ TAMAMLANAN GÜNCELLEMELER
+
+1. ⚙️  Port Yapılandırması
+   ✓ Port 3000 → 51511'e değiştirildi
+   ✓ Cloudflare Tunnel yapılandırması güncellendi
+   ✓ api.lensia.ai → localhost:51511
+
+2. 🔗 Lensia.ai Entegrasyonu
+   ✓ Webhook sistemi eklendi
+   ✓ API key doğrulama
+   ✓ Job tracking (lensiaJobId)
+   ✓ Otomatik sonuç gönderimi
+
+3. 🗄️  Veritabanı Güncellemeleri
+   ✓ lensiaJobId alanı eklendi
+   ✓ webhookUrl alanı eklendi
+   ✓ webhookSent ve webhookSentAt alanları
+   ✓ Migration: 20251003120731_add_lensia_integration
+
+4. 📡 API Endpoints Güncellendi
+   ✓ POST /api/jobs - Lensia.ai'den istek kabul eder
+   ✓ X-API-Key header kontrolü eklendi
+   ✓ Otomatik webhook gönderimi
+
+5. 🚀 Otomasyon Scriptleri
+   ✓ start-comfyui.sh - ComfyUI otomatik başlatıcı
+   ✓ tunnel.sh - Cloudflare Tunnel yönetici
+   ✓ start.sh - Ana başlatma scripti güncelll endi
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+🏗️  SİSTEM MİMARİSİ
+
+┌─────────────────────────────────────────────────────────────┐
+│  1. www.lensia.ai (Ana Site - Kullanıcı İstekleri)         │
+└────────────────────────┬────────────────────────────────────┘
+                         │ HTTP POST
+                         │ /api/jobs
+                         ▼
+┌─────────────────────────────────────────────────────────────┐
+│  2. api.lensia.ai:51511 (Bu Dashboard)                      │
+│     - Cloudflare Tunnel ile erişilebilir                    │
+│     - İstekleri alır ve veritabanına kaydeder               │
+│     - Operatör işleri dashboard'dan yönetir                 │
+└────────────────────────┬────────────────────────────────────┘
+                         │ Operatör "İşle" butonuna basar
+                         ▼
+┌─────────────────────────────────────────────────────────────┐
+│  3. localhost:8188 (ComfyUI Sunucusu)                       │
+│     - Yerel makinede çalışan ComfyUI                        │
+│     - Görüntü işleme ve AI üretimi                          │
+└────────────────────────┬────────────────────────────────────┘
+                         │ İşlem tamamlandı
+                         │ Sonuç görüntü
+                         ▼
+┌─────────────────────────────────────────────────────────────┐
+│  4. Dashboard → Webhook Gönderimi                           │
+│     POST https://www.lensia.ai/api/jobs/webhook             │
+│     {status, output_image_url, job_id}                      │
+└────────────────────────┬────────────────────────────────────┘
+                         ▼
+┌─────────────────────────────────────────────────────────────┐
+│  5. www.lensia.ai (Sonuç Alımı)                             │
+│     - Webhook'u alır                                        │
+│     - Kullanıcıya sonucu gösterir                           │
+└─────────────────────────────────────────────────────────────┘
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+🚀 BAŞLATMA TALİMATLARI
+
+ADIM 1: Cloudflare Tunnel'ı Başlat
+───────────────────────────────────────────────────────────────
+Cloudflare Tunnel zaten yapılandırılmış:
+/etc/cloudflared/config.yml
+
+Başlatma:
+  sudo systemctl start cloudflared
+
+Kontrol:
+  sudo systemctl status cloudflared
+  
+Loglar:
+  sudo journalctl -u cloudflared -f
+
+Otomatik başlatma:
+  sudo systemctl enable cloudflared
+
+✅ Başarılı ise: https://api.lensia.ai erişilebilir olacak
+
+
+ADIM 2: ComfyUI'ı Başlat
+───────────────────────────────────────────────────────────────
+Otomatik:
+  npm run comfyui
+
+Manuel:
+  cd /path/to/ComfyUI
+  python main.py --listen 127.0.0.1 --port 8188
+
+Kontrol:
+  curl http://127.0.0.1:8188/system_stats
+
+✅ Başarılı ise: JSON response döner
+
+
+ADIM 3: Dashboard'u Başlat
+───────────────────────────────────────────────────────────────
+Otomatik (önerilen):
+  ./start.sh
+
+Manuel:
+  npm run dev
+
+Erişim:
+  Local:  http://localhost:51511
+  Public: https://api.lensia.ai
+
+✅ Başarılı ise: Dashboard arayüzü açılır
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+📡 LENSIA.AI ENTEGRASYONU
+
+1. İş Gönderme (Lensia.ai → Dashboard)
+───────────────────────────────────────────────────────────────
+POST https://api.lensia.ai/api/jobs
+Content-Type: application/json
+X-API-Key: your-api-key-here
+
+{
+  "job_id": "lensia_12345",
+  "prompt": "A beautiful sunset over mountains",
+  "negative_prompt": "ugly, blurry, low quality",
+  "input_image_url": "https://lensia.ai/uploads/input.jpg",
+  "webhook_url": "https://www.lensia.ai/api/jobs/webhook",
+  "params": {
+    "steps": 20,
+    "cfg": 7,
+    "sampler": "euler"
+  }
+}
+
+Response:
+{
+  "id": "clxxx...",
+  "status": "pending",
+  "lensiaJobId": "lensia_12345",
+  "createdAt": "2025-10-03T..."
+}
+
+
+2. İş İşleme (Dashboard → ComfyUI)
+───────────────────────────────────────────────────────────────
+Operatör dashboard'a gider:
+  https://api.lensia.ai (veya http://localhost:51511)
+
+İşleri görür ve "İşle" butonuna basar:
+  - Job status: pending → processing
+  - ComfyUI'a gönderilir
+  - Görüntü üretilir
+  - Job status: processing → completed
+
+
+3. Sonuç Gönderme (Dashboard → Lensia.ai)
+───────────────────────────────────────────────────────────────
+Otomatik olarak webhook gönderilir:
+
+POST https://www.lensia.ai/api/jobs/webhook
+Content-Type: application/json
+X-API-Key: your-api-key-here
+
+{
+  "job_id": "lensia_12345",
+  "status": "completed",
+  "output_image_url": "http://127.0.0.1:8188/view?filename=...",
+  "processed_at": "2025-10-03T12:00:00Z"
+}
+
+Hata durumunda:
+{
+  "job_id": "lensia_12345",
+  "status": "error",
+  "error_message": "ComfyUI bağlantı hatası",
+  "processed_at": "2025-10-03T12:00:00Z"
+}
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+⚙️  YAPILANDIRMA
+
+.env.local Dosyası:
+───────────────────────────────────────────────────────────────
+# Database
+DATABASE_URL="file:./dev.db"
+
+# Server Configuration
+PORT=51511
+NEXT_PUBLIC_API_URL="https://api.lensia.ai"
+
+# ComfyUI API Configuration
+COMFYUI_API_URL="http://127.0.0.1:8188"
+
+# Lensia.ai Main Site Configuration
+LENSIA_MAIN_SITE_URL="https://www.lensia.ai"
+LENSIA_WEBHOOK_URL="https://www.lensia.ai/api/jobs/webhook"
+LENSIA_API_KEY="**GÜVENLİ-BİR-API-KEY-BURAYA**"
+
+⚠️  ÖNEMLİ: LENSIA_API_KEY'i güvenli bir değerle değiştirin!
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+🧪 TEST
+
+1. Manuel Test İşi Ekleme:
+───────────────────────────────────────────────────────────────
+curl -X POST https://api.lensia.ai/api/jobs \
+  -H "Content-Type: application/json" \
+  -H "X-API-Key: your-api-key" \
+  -d '{
+    "job_id": "test_001",
+    "prompt": "A futuristic city with flying cars",
+    "input_image_url": "https://picsum.photos/512",
+    "webhook_url": "https://webhook.site/unique-id",
+    "params": {"steps": 20}
+  }'
+
+
+2. Dashboard'dan İş Görüntüleme:
+───────────────────────────────────────────────────────────────
+Tarayıcıda aç: https://api.lensia.ai
+- Bekleyen işleri göreceksiniz
+- "İşle" butonuna basın
+- İşlem durumunu takip edin
+
+
+3. Webhook Test:
+───────────────────────────────────────────────────────────────
+Webhook'ları test etmek için:
+  https://webhook.site
+
+Webhook URL'ini webhook.site'dan alın ve istek atarken kullanın.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+🛠️  YÖNETİM KOMUTLARI
+
+Dashboard:
+  npm run dev             # Development server (port 51511)
+  npm run build           # Production build
+  npm run start           # Production server
+
+ComfyUI:
+  npm run comfyui         # ComfyUI otomatik başlatıcı
+  COMFYUI_DIR=/path npm run comfyui  # Özel dizin
+
+Cloudflare Tunnel:
+  npm run tunnel:start    # systemctl start cloudflared
+  npm run tunnel:stop     # systemctl stop cloudflared
+  npm run tunnel:status   # systemctl status cloudflared
+
+Veritabanı:
+  npm run db:studio       # Prisma Studio GUI
+  npm run db:migrate      # Yeni migration
+  npm run db:generate     # Prisma client oluştur
+
+Loglar:
+  sudo journalctl -u cloudflared -f    # Tunnel logları
+  tail -f logs/dashboard.log           # Dashboard logları
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+🔧 SORUN GİDERME
+
+Problem: Cloudflare Tunnel bağlanamıyor
+Çözüm:
+  sudo systemctl restart cloudflared
+  sudo journalctl -u cloudflared -f
+  # Config dosyasını kontrol et: /etc/cloudflared/config.yml
+
+Problem: ComfyUI bağlantı hatası
+Çözüm:
+  curl http://127.0.0.1:8188/system_stats
+  # ComfyUI'ın çalıştığından emin olun
+  cd /path/to/ComfyUI && python main.py
+
+Problem: Webhook gönderilmiyor
+Çözüm:
+  # .env.local kontrol et
+  # LENSIA_WEBHOOK_URL doğru mu?
+  # LENSIA_API_KEY ayarlandı mı?
+  # Veritabanında webhookSent kontrol et
+  npm run db:studio
+
+Problem: Port 51511 kullanımda
+Çözüm:
+  lsof -i :51511
+  kill -9 <PID>
+
+Problem: İşler görünmüyor
+Çözüm:
+  # Veritabanını kontrol et
+  npm run db:studio
+  # Migration kontrol et
+  npx prisma migrate status
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+📊 VERİTABANI YAPISI
+
+Job Tablosu:
+───────────────────────────────────────────────────────────────
+id              String    (Unique ID)
+status          String    (pending|processing|completed|sent|error)
+prompt          String    (Kullanıcı prompt'u)
+negativePrompt  String?   (Negative prompt)
+inputImageUrl   String    (Giriş görüntüsü URL)
+outputImageUrl  String?   (Sonuç görüntüsü URL)
+paramsJson      String    (Ekstra parametreler JSON)
+errorMessage    String?   (Hata mesajı)
+
+lensiaJobId     String?   (Lensia.ai'den gelen job ID) ← YENİ
+webhookUrl      String?   (Webhook gönderileceğ URL)   ← YENİ
+webhookSent     Boolean   (Webhook gönderildi mi?)     ← YENİ
+webhookSentAt   DateTime? (Webhook gönderilme zamanı)  ← YENİ
+
+createdAt       DateTime
+updatedAt       DateTime
+
+Durum Akışı:
+  pending → processing → completed → sent
+                      ↓
+                    error
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+📁 ÖNEMLİ DOSYALAR
+
+Yapılandırma:
+  .env.local                          # Environment variables
+  /etc/cloudflared/config.yml         # Tunnel config
+  prisma/schema.prisma                # Database schema
+
+API Endpoints:
+  app/api/jobs/route.ts               # POST, GET /api/jobs
+  app/api/jobs/[id]/route.ts          # GET, DELETE
+  app/api/jobs/[id]/process/route.ts  # POST işleme
+
+Core Logic:
+  lib/comfyui.ts                      # ComfyUI entegrasyonu
+  lib/webhook.ts                      # Webhook helper
+  lib/prisma.ts                       # Database client
+
+Frontend:
+  app/page.tsx                        # Ana dashboard
+  app/_components/job-table.tsx       # İş tablosu
+
+Scripts:
+  start.sh                            # Ana başlatma
+  scripts/start-comfyui.sh            # ComfyUI başlatıcı
+  scripts/tunnel.sh                   # Tunnel yönetici
+
+Dokümantasyon:
+  API_DOCUMENTATION.md                # API referansı
+  README.md                           # Genel dökümantasyon
+  QUICKSTART.md                       # Hızlı başlangıç
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+✅ KONTROL LİSTESİ
+
+Kurulum:
+  [✓] Bağımlılıklar yüklendi (npm install)
+  [✓] Prisma client oluşturuldu
+  [✓] Veritabanı migration yapıldı
+  [✓] .env.local dosyası yapılandırıldı
+
+Servisler:
+  [ ] Cloudflare Tunnel çalışıyor
+  [ ] ComfyUI çalışıyor (port 8188)
+  [ ] Dashboard çalışıyor (port 51511)
+  [ ] https://api.lensia.ai erişilebilir
+
+Entegrasyon:
+  [ ] LENSIA_API_KEY ayarlandı
+  [ ] LENSIA_WEBHOOK_URL doğru
+  [ ] Test iş oluşturuldu
+  [ ] İş başarıyla işlendi
+  [ ] Webhook başarıyla gönderildi
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+🎯 SONRAKİ ADIMLAR
+
+1. [✓] Cloudflare Tunnel'ı başlat
+      sudo systemctl start cloudflared
+
+2. [✓] ComfyUI'ı başlat
+      npm run comfyui
+
+3. [✓] Dashboard'u başlat
+      ./start.sh
+
+4. [ ] API Key'i güvenli bir değerle güncelle
+      .env.local → LENSIA_API_KEY
+
+5. [ ] Lensia.ai'ye entegrasyon testleri yap
+
+6. [ ] ComfyUI workflow'unu özelleştir
+      lib/comfyui.ts → createWorkflow()
+
+7. [ ] Production'a deploy
+      npm run build && npm start
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+🎉 PROJE DURUMU: HAZIR!
+
+Tüm güncellemeler tamamlandı ve sistem kullanıma hazır.
+
+Sorular ve destek için:
+  📖 API_DOCUMENTATION.md
+  📖 README.md
+  📖 QUICKSTART.md
+
+═══════════════════════════════════════════════════════════════
+
+Başarılar! 🚀

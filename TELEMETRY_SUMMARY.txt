@@ -1,0 +1,334 @@
+═══════════════════════════════════════════════════════════════
+  TELEMETRİ VE HEALTH CHECK SİSTEMİ EKLENDİ! 
+═══════════════════════════════════════════════════════════════
+
+📊 YENİ ENDPOINT'LER
+
+1. GET /api/ping
+   ├─ Basit canlılık kontrolü
+   ├─ Kimlik doğrulama YOK
+   ├─ Hız: <10ms
+   └─ Kullanım: Uptime monitoring
+
+2. GET /api/health
+   ├─ Detaylı sistem durumu
+   ├─ Kimlik doğrulama YOK
+   ├─ Hız: <100ms
+   ├─ Servisler: Database, ComfyUI, Webhook
+   ├─ İstatistikler: Jobs, Queue, Performance
+   └─ Kullanım: Health monitoring, Alerting
+
+3. GET /api/telemetry
+   ├─ Kapsamlı metrikler
+   ├─ Kimlik doğrulama GEREKLİ (X-API-Key)
+   ├─ Hız: <200ms
+   ├─ Metrikler: Detaylı iş istatistikleri
+   ├─ Timeline: 1h, 24h, 7d
+   └─ Kullanım: Analytics, BI, Monitoring
+
+4. POST /api/telemetry
+   ├─ Lensia.ai → Dashboard veri gönderimi
+   ├─ Kimlik doğrulama GEREKLİ
+   └─ Kullanım: İki yönlü telemetri
+
+═══════════════════════════════════════════════════════════════
+  LENSIA.AI İÇİN KULLANIM ÖRNEKLERİ
+═══════════════════════════════════════════════════════════════
+
+┌─────────────────────────────────────────────────────────────┐
+│  1. Basit Ping (Her 1 dakika)                               │
+└─────────────────────────────────────────────────────────────┘
+
+fetch('https://api.lensia.ai/api/ping')
+  .then(res => res.json())
+  .then(data => {
+    if (data.status !== 'ok') {
+      sendAlert('Dashboard down!')
+    }
+  })
+
+Response:
+{
+  "status": "ok",
+  "message": "pong",
+  "timestamp": "2025-10-03T12:00:00.000Z"
+}
+
+
+┌─────────────────────────────────────────────────────────────┐
+│  2. Health Check (Her 5 dakika)                             │
+└─────────────────────────────────────────────────────────────┘
+
+fetch('https://api.lensia.ai/api/health')
+  .then(res => res.json())
+  .then(health => {
+    console.log('Status:', health.status)  // "healthy" | "degraded"
+    console.log('ComfyUI:', health.services.comfyui.status)
+    console.log('Queue:', health.statistics.pending)
+    
+    if (health.status === 'degraded') {
+      sendAlert('Dashboard degraded!')
+    }
+  })
+
+Response:
+{
+  "status": "healthy",
+  "services": {
+    "database": { "status": "up" },
+    "comfyui": { "status": "up" },
+    "webhook": { "status": "up" }
+  },
+  "statistics": {
+    "total": 150,
+    "pending": 5,
+    "completed": 140,
+    "queueHealth": "good"
+  }
+}
+
+
+┌─────────────────────────────────────────────────────────────┐
+│  3. Detaylı Telemetri (Her 15 dakika)                      │
+└─────────────────────────────────────────────────────────────┘
+
+fetch('https://api.lensia.ai/api/telemetry', {
+  headers: {
+    'X-API-Key': 'your-api-key-here'
+  }
+})
+  .then(res => res.json())
+  .then(telemetry => {
+    console.log('Jobs Total:', telemetry.jobs.total)
+    console.log('Success Rate:', telemetry.jobs.performance.successRate)
+    console.log('Avg Time:', telemetry.jobs.performance.averageProcessingTime)
+    console.log('Webhook Success:', telemetry.webhooks.successRate)
+  })
+
+Response:
+{
+  "jobs": {
+    "total": 1500,
+    "byStatus": {
+      "pending": 5,
+      "processing": 2,
+      "completed": 1200
+    },
+    "timeline": {
+      "lastHour": 12,
+      "last24Hours": 250
+    },
+    "performance": {
+      "averageProcessingTime": "2m",
+      "successRate": "96%"
+    }
+  },
+  "webhooks": {
+    "successRate": "96%"
+  }
+}
+
+═══════════════════════════════════════════════════════════════
+  MONITORING VE ALERTING ÖNERİLERİ
+═══════════════════════════════════════════════════════════════
+
+┌───────────────────────────────────────┬─────────────────────┐
+│ Metrik                                │ Alert Koşulu        │
+├───────────────────────────────────────┼─────────────────────┤
+│ Dashboard Status                      │ status != "healthy" │
+│ ComfyUI Status                        │ status == "down"    │
+│ Queue Size                            │ > 50 jobs           │
+│ Queue Health                          │ "high"              │
+│ Success Rate                          │ < 90%               │
+│ Webhook Success Rate                  │ < 95%               │
+│ Response Time                         │ > 1000ms            │
+└───────────────────────────────────────┴─────────────────────┘
+
+Örnek Alert Logic:
+─────────────────────────────────────────────────────────────
+
+const health = await fetch('https://api.lensia.ai/api/health')
+const data = await health.json()
+
+// Critical Alerts
+if (data.status === 'degraded') {
+  sendSlackAlert('🚨 Dashboard degraded!')
+}
+
+if (data.services.comfyui.status === 'down') {
+  sendSlackAlert('⚠️ ComfyUI is DOWN!')
+  // Auto-restart script çalıştır
+}
+
+// Warning Alerts
+if (data.statistics.queueHealth === 'high') {
+  sendSlackAlert(`📊 High queue: ${data.statistics.pending} jobs`)
+}
+
+if (data.statistics.pending > 100) {
+  sendSlackAlert('🔴 Queue overflow! Consider scaling.')
+}
+
+═══════════════════════════════════════════════════════════════
+  TELEGRAM BOT ÖRNEĞİ
+═══════════════════════════════════════════════════════════════
+
+const TelegramBot = require('node-telegram-bot-api')
+const bot = new TelegramBot(TELEGRAM_TOKEN)
+
+async function monitorDashboard() {
+  const res = await fetch('https://api.lensia.ai/api/health')
+  const health = await res.json()
+  
+  if (health.status === 'degraded') {
+    await bot.sendMessage(
+      ADMIN_CHAT_ID,
+      `⚠️ Dashboard Degraded!\n\n` +
+      `ComfyUI: ${health.services.comfyui.status}\n` +
+      `Queue: ${health.statistics.pending} jobs`
+    )
+  }
+}
+
+setInterval(monitorDashboard, 120000) // Her 2 dakika
+
+═══════════════════════════════════════════════════════════════
+  PROMETHEUS METRICS EXPORT
+═══════════════════════════════════════════════════════════════
+
+// Express.js endpoint
+app.get('/metrics', async (req, res) => {
+  const telemetry = await fetch('https://api.lensia.ai/api/telemetry', {
+    headers: { 'X-API-Key': API_KEY }
+  })
+  const data = await telemetry.json()
+  
+  const metrics = `
+dashboard_jobs_total ${data.jobs.total}
+dashboard_jobs_pending ${data.jobs.byStatus.pending}
+dashboard_jobs_completed ${data.jobs.byStatus.completed}
+dashboard_queue_health ${data.queue.health === 'healthy' ? 0 : 1}
+dashboard_webhook_success_rate ${parseFloat(data.webhooks.successRate) / 100}
+  `.trim()
+  
+  res.set('Content-Type', 'text/plain')
+  res.send(metrics)
+})
+
+// Prometheus scrape config:
+scrape_configs:
+  - job_name: 'dashboard'
+    scrape_interval: 15m
+    static_configs:
+      - targets: ['lensia.ai:9090']
+
+═══════════════════════════════════════════════════════════════
+  GRAFANA DASHBOARD ÖRNEĞİ
+═══════════════════════════════════════════════════════════════
+
+Panel 1: Dashboard Status
+  ├─ Query: up{job="dashboard"}
+  ├─ Type: Stat
+  └─ Color: Green (up) / Red (down)
+
+Panel 2: Queue Size
+  ├─ Query: dashboard_jobs_pending
+  ├─ Type: Graph
+  └─ Thresholds:
+      ├─ 0-10: Green
+      ├─ 10-50: Yellow
+      └─ 50+: Red
+
+Panel 3: Success Rate
+  ├─ Query: dashboard_webhook_success_rate * 100
+  ├─ Type: Gauge
+  └─ Min: 0%, Max: 100%, Target: 95%
+
+Panel 4: Processing Time
+  ├─ Query: dashboard_avg_processing_time
+  ├─ Type: Graph
+  └─ Unit: seconds
+
+═══════════════════════════════════════════════════════════════
+  TEST KOMUTLARI
+═══════════════════════════════════════════════════════════════
+
+# Ping test
+curl https://api.lensia.ai/api/ping
+
+# Health check test
+curl https://api.lensia.ai/api/health | jq
+
+# Telemetry test (API key gerekli)
+curl https://api.lensia.ai/api/telemetry \
+  -H "X-API-Key: your-api-key" | jq
+
+# POST telemetry test
+curl -X POST https://api.lensia.ai/api/telemetry \
+  -H "Content-Type: application/json" \
+  -H "X-API-Key: your-api-key" \
+  -d '{
+    "source": "lensia-main-site",
+    "metrics": {
+      "activeUsers": 1250,
+      "jobsSubmitted": 250
+    }
+  }'
+
+═══════════════════════════════════════════════════════════════
+  ÖNERİLEN İSTEK SIKLIĞI
+═══════════════════════════════════════════════════════════════
+
+┌──────────────────┬─────────────────┬─────────────────────┐
+│ Endpoint         │ Önerilen        │ Max Sıklık          │
+├──────────────────┼─────────────────┼─────────────────────┤
+│ /api/ping        │ 1 dakika        │ 10 saniye           │
+│ /api/health      │ 5 dakika        │ 1 dakika            │
+│ /api/telemetry   │ 15 dakika       │ 5 dakika            │
+└──────────────────┴─────────────────┴─────────────────────┘
+
+═══════════════════════════════════════════════════════════════
+  OLUŞTURULAN DOSYALAR
+═══════════════════════════════════════════════════════════════
+
+✅ app/api/ping/route.ts               - Basit ping endpoint
+✅ app/api/health/route.ts             - Health check endpoint
+✅ app/api/telemetry/route.ts          - Telemetri endpoint
+✅ TELEMETRY_DOCUMENTATION.md          - Detaylı dokümantasyon
+✅ TELEMETRY_QUICKSTART.md             - Hızlı başlangıç kılavuzu
+✅ TELEMETRY_SUMMARY.txt               - Bu dosya (özet)
+
+═══════════════════════════════════════════════════════════════
+  SONRAKI ADIMLAR
+═══════════════════════════════════════════════════════════════
+
+1. [ ] Dashboard'u başlat
+       ./start.sh
+
+2. [ ] Endpoint'leri test et
+       curl https://api.lensia.ai/api/ping
+       curl https://api.lensia.ai/api/health
+
+3. [ ] Lensia.ai backend'ine entegre et
+       - Ping monitoring ekle
+       - Health check logic ekle
+       - Alert sistemi kur
+
+4. [ ] Monitoring dashboard oluştur
+       - Grafana/Prometheus
+       - veya basit web dashboard
+
+5. [ ] Alert kuralları tanımla
+       - Telegram/Discord/Slack
+       - Email notifications
+
+═══════════════════════════════════════════════════════════════
+
+📖 Detaylı Bilgi:
+   - TELEMETRY_DOCUMENTATION.md    (Kapsamlı API referansı)
+   - TELEMETRY_QUICKSTART.md       (Kod örnekleri)
+   - API_DOCUMENTATION.md           (Ana API dökümanı)
+
+═══════════════════════════════════════════════════════════════
+
+✨ Sistem Hazır! Telemetri endpoint'leri kullanıma hazır.
