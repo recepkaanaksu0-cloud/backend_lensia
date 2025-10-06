@@ -1,35 +1,44 @@
-import { NextResponse } from 'next/server'
+import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
+import { applyCorsHeaders, handleCorsOptions } from '@/lib/cors'
 
 /**
  * Telemetry Endpoint - Detaylı sistem metrikleri
  * Lensia.ai bu endpoint'i kullanarak detaylı istatistikler ve metrikler alabilir
  */
-export async function GET(request: Request) {
+
+export async function OPTIONS(request: NextRequest) {
+  return handleCorsOptions(request)
+}
+
+export async function GET(request: NextRequest) {
   try {
     // API key kontrolü
     const apiKey = request.headers.get('x-api-key')
     if (apiKey !== process.env.LENSIA_API_KEY) {
-      return NextResponse.json(
+      const response = NextResponse.json(
         { error: 'Unauthorized' },
         { status: 401 }
       )
+      return applyCorsHeaders(request, response)
     }
     
     const metrics = await collectMetrics()
     
-    return NextResponse.json(metrics, {
+    const response = NextResponse.json(metrics, {
       headers: {
         'Cache-Control': 'no-cache, no-store, must-revalidate'
       }
     })
+    return applyCorsHeaders(request, response)
     
   } catch (error) {
     console.error('Telemetry error:', error)
-    return NextResponse.json(
+    const response = NextResponse.json(
       { error: 'Failed to collect telemetry' },
       { status: 500 }
     )
+    return applyCorsHeaders(request, response)
   }
 }
 
@@ -37,15 +46,16 @@ export async function GET(request: Request) {
  * POST - Lensia.ai'den telemetri verisi alımı (opsiyonel)
  * Lensia.ai kendi metriklerini bu endpoint'e gönderebilir
  */
-export async function POST(request: Request) {
+export async function POST(request: NextRequest) {
   try {
     // API key kontrolü
     const apiKey = request.headers.get('x-api-key')
     if (apiKey !== process.env.LENSIA_API_KEY) {
-      return NextResponse.json(
+      const response = NextResponse.json(
         { error: 'Unauthorized' },
         { status: 401 }
       )
+      return applyCorsHeaders(request, response)
     }
     
     const body = await request.json()
@@ -58,17 +68,19 @@ export async function POST(request: Request) {
     
     // İsteğe bağlı: Veritabanına kaydet veya başka bir işlem yap
     
-    return NextResponse.json({
+    const response = NextResponse.json({
       status: 'received',
       timestamp: new Date().toISOString()
     })
+    return applyCorsHeaders(request, response)
     
   } catch (error) {
     console.error('Telemetry POST error:', error)
-    return NextResponse.json(
+    const response = NextResponse.json(
       { error: 'Failed to process telemetry' },
       { status: 500 }
     )
+    return applyCorsHeaders(request, response)
   }
 }
 

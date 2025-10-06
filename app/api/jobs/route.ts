@@ -1,7 +1,12 @@
-import { NextResponse } from 'next/server'
+import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
+import { applyCorsHeaders, handleCorsOptions } from '@/lib/cors'
 
-export async function GET() {
+export async function OPTIONS(request: NextRequest) {
+  return handleCorsOptions(request)
+}
+
+export async function GET(request: NextRequest) {
   try {
     const jobs = await prisma.job.findMany({
       orderBy: {
@@ -9,17 +14,19 @@ export async function GET() {
       }
     })
     
-    return NextResponse.json(jobs)
+    const response = NextResponse.json(jobs)
+    return applyCorsHeaders(request, response)
   } catch (error) {
     console.error('İşleri getirirken hata:', error)
-    return NextResponse.json(
+    const response = NextResponse.json(
       { error: 'İşler getirilirken bir hata oluştu' },
       { status: 500 }
     )
+    return applyCorsHeaders(request, response)
   }
 }
 
-export async function POST(request: Request) {
+export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
     
@@ -40,12 +47,14 @@ export async function POST(request: Request) {
     
     console.log(`✅ Yeni iş oluşturuldu: ${job.id}${isLensiaRequest ? ' (Lensia.ai)' : ''}`)
     
-    return NextResponse.json(job, { status: 201 })
+    const response = NextResponse.json(job, { status: 201 })
+    return applyCorsHeaders(request, response)
   } catch (error) {
     console.error('İş oluşturulurken hata:', error)
-    return NextResponse.json(
+    const response = NextResponse.json(
       { error: 'İş oluşturulurken bir hata oluştu' },
       { status: 500 }
     )
+    return applyCorsHeaders(request, response)
   }
 }

@@ -1,36 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server'
 import type { GenerationRequest as GenerationRequestModel } from '@prisma/client'
 import { prisma } from '@/lib/prisma'
-
-const ALLOWED_ORIGINS = [
-  'https://www.lensia.ai',
-  'https://lensia.ai',
-  'https://api.lensia.ai',
-  'https://localhost:3000',
-  'http://localhost:3000',
-]
-
-function applyCorsHeaders(request: NextRequest, response: NextResponse) {
-  const origin = request.headers.get('origin') ?? ''
-  const allowedOrigin = origin && ALLOWED_ORIGINS.includes(origin) ? origin : ALLOWED_ORIGINS[0]
-
-  response.headers.set('Access-Control-Allow-Origin', allowedOrigin ?? '*')
-  response.headers.set(
-    'Access-Control-Allow-Methods',
-    'GET,POST,OPTIONS'
-  )
-  response.headers.set(
-    'Access-Control-Allow-Headers',
-    'Content-Type, Authorization, X-Requested-With'
-  )
-  response.headers.set('Access-Control-Allow-Credentials', 'true')
-
-  return response
-}
+import { applyCorsHeaders, handleCorsOptions, corsJsonResponse } from '@/lib/cors'
 
 export async function OPTIONS(request: NextRequest) {
-  const response = new NextResponse(null, { status: 204 })
-  return applyCorsHeaders(request, response)
+  return handleCorsOptions(request)
 }
 
 // Lensia.ai'dan gelen istek tipi
