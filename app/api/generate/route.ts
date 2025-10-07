@@ -551,21 +551,45 @@ export async function POST(request: NextRequest) {
       data: workflowSteps,
     })
 
-    // İlk adımı başlat (prompt generation)
+    // İlk adımı başlat (prompt generation) ve tamamlanmasını bekle
     await startPromptGeneration(generationRequest.id)
-
+    
+    // AI generation tamamlanana kadar bekle
+    await startAIGeneration(generationRequest.id)
+    
+    // Güncel durumu al
+    const updatedRequest = await prisma.generationRequest.findUnique({
+      where: { id: generationRequest.id },
+    })
+    
+    // Oluşturulan fotoğrafları al
+    const generatedPhotos = await prisma.generatedPhoto.findMany({
+      where: { requestId: generationRequest.id },
+      orderBy: { createdAt: 'asc' },
+    })
+    
     const estimatedSeconds = Math.max(normalized.requestedPhotoCount * 20, 60)
 
     const response = NextResponse.json(
       {
-        success: true,
-        requestId: generationRequest.id,
-        message: 'Generation started',
-        estimatedTime: estimatedSeconds,
-        photoCount: normalized.requestedPhotoCount,
-        warnings: normalized.warnings,
+        generationId: generationRequest.id,
+        status: updatedRequest?.status || 'pending',
+        // Frontend'in beklediği format
+        photos: generatedPhotos.map(photo => photo.photoUrl),
+        images: generatedPhotos.map(photo => photo.photoUrl),
+        results: generatedPhotos.map(photo => ({
+          url: photo.photoUrl,
+          thumbnailUrl: photo.thumbnailUrl,
+          prompt: photo.prompt,
+          model: photo.aiModel,
+          metadata: safeJsonParse(photo.metadata, {})
+        })),
+        data: {
+          photos: generatedPhotos.map(photo => photo.photoUrl),
+          photoCount: generatedPhotos.length
+        }
       },
-      { status: 202 }
+      { status: 200 }
     )
     return applyCorsHeaders(request, response)
   } catch (error) {
@@ -634,11 +658,9 @@ async function startPromptGeneration(requestId: string) {
         status: 'processing',
       },
     })
-
-    // Bir sonraki adımı başlat (AI generation)
-    setTimeout(() => startAIGeneration(requestId), 1000)
   } catch (error) {
     console.error('Prompt generation error:', error)
+    throw error
   }
 }
 
@@ -716,15 +738,36 @@ async function startAIGeneration(requestId: string) {
       },
     })
 
-    // Ana isteği güncelle
+    // Tüm oluşturulan fotoğrafları al
+    const allGeneratedPhotos = await prisma.generatedPhoto.findMany({
+      where: { requestId },
+      orderBy: { createdAt: 'asc' },
+    })
+
+    // Ana isteği güncelle - Fotoğraflar oluşturuldu, metadata'ya kaydet
     await prisma.generationRequest.update({
       where: { id: requestId },
       data: {
-        currentStep: 'step3_user_selection',
+        currentStep: 'completed',
+        status: 'completed',
+        updatedAt: new Date(),
+        // brandIdentity field'ına metadata ekle
+        brandIdentity: JSON.stringify({
+          ...JSON.parse(
+            (await prisma.generationRequest.findUnique({ 
+              where: { id: requestId } 
+            }))?.brandIdentity || '{}'
+          ),
+          metadata: {
+            images: allGeneratedPhotos.map(photo => photo.photoUrl),
+            photoCount: allGeneratedPhotos.length
+          }
+        })
       },
     })
   } catch (error) {
     console.error('AI generation error:', error)
+    throw error
   }
 }
 

@@ -1,0 +1,84 @@
+import { NextRequest, NextResponse } from 'next/server'
+import { prisma } from '@/lib/prisma'
+import { applyCorsHeaders } from '@/lib/cors'
+
+function safeJsonParse<T>(value: string | null | undefined, fallback: T): T {
+  if (!value) return fallback
+  try {
+    return JSON.parse(value) as T
+  } catch (error) {
+    console.warn('JSON parse warning:', error)
+    return fallback
+  }
+}
+
+export async function GET(
+  request: NextRequest,
+  { params }: { params: Promise<{ generationId: string }> }
+) {
+  try {
+    const { generationId: requestId } = await params
+
+    // Get auth token
+    const authHeader = request.headers.get('authorization')
+    if (!authHeader) {
+      const response = NextResponse.json(
+        { error: 'Unauthorized' },
+        { status: 401 }
+      )
+      return applyCorsHeaders(request, response)
+    }
+
+    // Query generation from database
+    const generation = await prisma.generationRequest.findUnique({
+      where: { id: requestId },
+      include: {
+        workflows: {
+          orderBy: { createdAt: 'asc' }
+        },
+        generatedPhotos: {
+          orderBy: { createdAt: 'asc' }
+        }
+      }
+    })
+
+    if (!generation) {
+      const response = NextResponse.json(
+        { error: 'Generation not found' },
+        { status: 404 }
+      )
+      return applyCorsHeaders(request, response)
+    }
+
+    // Calculate overall progress
+    const totalSteps = generation.workflows.length
+    const completedSteps = generation.workflows.filter(w => w.status === 'completed').length
+    const overallProgress = totalSteps > 0 ? Math.round((completedSteps / totalSteps) * 100) : 0
+
+    // Get current workflow step
+    const currentWorkflow = generation.workflows.find(w => w.status === 'processing') 
+      || generation.workflows.find(w => w.status === 'pending')
+      || generation.workflows[generation.workflows.length - 1]
+
+    // Build response matching frontend expectations
+    const responseData = {
+      generationId: generation.id,
+      status: generation.status,
+      progress: overallProgress
+    }
+
+    const response = NextResponse.json(responseData, {
+      headers: {
+        'Cache-Control': 'max-age=2, must-revalidate'
+      }
+    })
+    return applyCorsHeaders(request, response)
+  } catch (error) {
+    console.error('Status endpoint error:', error)
+    const response = NextResponse.json(
+      { error: 'Internal server error' },
+      { status: 500 }
+    )
+    return applyCorsHeaders(request, response)
+  }
+}
