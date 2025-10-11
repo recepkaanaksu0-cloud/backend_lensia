@@ -124,7 +124,7 @@ source venv/bin/activate
 echo -e "${BLUE}🚀 ComfyUI başlatılıyor...${NC}"
 
 # ComfyUI'ı arka planda çalıştır ve logları dosyaya yaz
-nohup python main.py $GPU_FLAG --listen 127.0.0.1 --port 8188 > ../logs/comfyui.log 2>&1 &
+nohup python main.py $GPU_FLAG --listen 127.0.0.1 --port 8188 --cpu > ../logs/comfyui.log 2>&1 &
 COMFYUI_PID=$!
 echo "$COMFYUI_PID" > "$COMFYUI_PID_FILE"
 
