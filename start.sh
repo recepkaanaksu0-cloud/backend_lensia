@@ -64,12 +64,14 @@ fi
 echo -e "${YELLOW}🔍 ComfyUI sunucusu kontrol ediliyor...${NC}"
 if curl -s --max-time 5 http://127.0.0.1:8188/system_stats > /dev/null 2>&1; then
     echo -e "${GREEN}✓ ComfyUI sunucusu çalışıyor${NC}"
-else
-    echo -e "${RED}⚠️  ComfyUI sunucusu bulunamadı!${NC}"
-    echo -e "${YELLOW}  ComfyUI'ı başlatmak için:${NC}"
+elif [ -d "./comfyui" ]; then
+    echo -e "${YELLOW}⚠️  ComfyUI kurulu ama çalışmıyor!${NC}"
+    echo -e "${YELLOW}  Başlatmak için:${NC}"
     echo -e "${YELLOW}  npm run comfyui${NC}"
-    echo -e "${YELLOW}  veya${NC}"
-    echo -e "${YELLOW}  cd /path/to/ComfyUI && python main.py${NC}"
+else
+    echo -e "${YELLOW}⚠️  ComfyUI kurulu değil!${NC}"
+    echo -e "${YELLOW}  Kurmak için:${NC}"
+    echo -e "${YELLOW}  npm run comfyui:install${NC}"
 fi
 
 # Cloudflare Tunnel durumunu kontrol et

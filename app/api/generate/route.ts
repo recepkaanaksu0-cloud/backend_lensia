@@ -860,7 +860,10 @@ export async function GET(request: NextRequest) {
           currentStep: req.currentStep,
           status: req.status,
           workflows: req.workflows,
-          generatedPhotos: req.generatedPhotos,
+          generatedPhotos: req.generatedPhotos.map((photo) => ({
+            ...photo,
+            photoId: photo.id, // PhotoID eklendi
+          })),
           brandIdentity,
           createdAt: req.createdAt,
           updatedAt: req.updatedAt,

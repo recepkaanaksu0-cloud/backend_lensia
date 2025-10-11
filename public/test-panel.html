@@ -1,0 +1,646 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LENSIA - Fotoğraf İşleme Test Paneli</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        .header {
+            background: white;
+            padding: 30px;
+            border-radius: 20px;
+            margin-bottom: 30px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+        }
+
+        .header h1 {
+            color: #667eea;
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+        }
+
+        .header p {
+            color: #666;
+            font-size: 1.1rem;
+        }
+
+        .status-bar {
+            display: flex;
+            gap: 20px;
+            margin-top: 20px;
+        }
+
+        .status-item {
+            flex: 1;
+            padding: 15px;
+            border-radius: 10px;
+            background: #f8f9fa;
+            border-left: 4px solid #28a745;
+        }
+
+        .status-item.offline {
+            border-left-color: #dc3545;
+        }
+
+        .status-item strong {
+            display: block;
+            margin-bottom: 5px;
+            color: #333;
+        }
+
+        .content {
+            display: grid;
+            grid-template-columns: 1fr 2fr;
+            gap: 30px;
+        }
+
+        .panel {
+            background: white;
+            padding: 30px;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+        }
+
+        .panel h2 {
+            color: #667eea;
+            margin-bottom: 20px;
+            font-size: 1.8rem;
+        }
+
+        .photo-selector {
+            margin-bottom: 25px;
+        }
+
+        .photo-selector label {
+            display: block;
+            margin-bottom: 10px;
+            color: #333;
+            font-weight: 600;
+        }
+
+        .photo-selector input {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 0.95rem;
+        }
+
+        .categories {
+            margin-bottom: 30px;
+        }
+
+        .category {
+            margin-bottom: 20px;
+        }
+
+        .category h3 {
+            color: #444;
+            margin-bottom: 12px;
+            font-size: 1.2rem;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .category-badge {
+            background: #667eea;
+            color: white;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+        }
+
+        .process-buttons {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 10px;
+        }
+
+        .process-btn {
+            padding: 12px 20px;
+            border: none;
+            border-radius: 8px;
+            font-size: 0.95rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            text-align: left;
+        }
+
+        .process-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(102, 126, 234, 0.4);
+        }
+
+        .process-btn:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .result-panel {
+            min-height: 400px;
+        }
+
+        .result-content {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 10px;
+            min-height: 300px;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 60px 20px;
+        }
+
+        .spinner {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #667eea;
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 20px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .result-image {
+            max-width: 100%;
+            border-radius: 10px;
+            margin-top: 20px;
+        }
+
+        .result-info {
+            background: white;
+            padding: 15px;
+            border-radius: 8px;
+            margin-top: 15px;
+        }
+
+        .result-info pre {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 5px;
+            overflow-x: auto;
+            font-size: 0.9rem;
+        }
+
+        .alert {
+            padding: 15px 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+
+        .alert-success {
+            background: #d4edda;
+            color: #155724;
+            border-left: 4px solid #28a745;
+        }
+
+        .alert-error {
+            background: #f8d7da;
+            color: #721c24;
+            border-left: 4px solid #dc3545;
+        }
+
+        .alert-warning {
+            background: #fff3cd;
+            color: #856404;
+            border-left: 4px solid #ffc107;
+        }
+
+        .param-inputs {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 8px;
+            margin-top: 15px;
+            display: none;
+        }
+
+        .param-inputs.active {
+            display: block;
+        }
+
+        .param-group {
+            margin-bottom: 15px;
+        }
+
+        .param-group label {
+            display: block;
+            margin-bottom: 5px;
+            color: #555;
+            font-weight: 600;
+            font-size: 0.9rem;
+        }
+
+        .param-group input, .param-group select {
+            width: 100%;
+            padding: 10px;
+            border: 2px solid #e0e0e0;
+            border-radius: 6px;
+            font-size: 0.9rem;
+        }
+
+        .execute-btn {
+            width: 100%;
+            padding: 15px;
+            background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 1.1rem;
+            font-weight: 700;
+            cursor: pointer;
+            margin-top: 15px;
+        }
+
+        .execute-btn:hover {
+            box-shadow: 0 8px 20px rgba(40, 167, 69, 0.4);
+        }
+
+        .execute-btn:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🎨 LENSIA - Fotoğraf İşleme Test Paneli</h1>
+            <p>ComfyUI ile desteklenen 46 profesyonel fotoğraf işleme özelliğini test edin</p>
+            
+            <div class="status-bar">
+                <div class="status-item" id="backendStatus">
+                    <strong>Backend</strong>
+                    <span>Kontrol ediliyor...</span>
+                </div>
+                <div class="status-item" id="comfyuiStatus">
+                    <strong>ComfyUI</strong>
+                    <span>Kontrol ediliyor...</span>
+                </div>
+                <div class="status-item">
+                    <strong>Toplam İşlem</strong>
+                    <span id="totalProcesses">0</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="content">
+            <div class="panel">
+                <h2>⚙️ İşlem Seçimi</h2>
+                
+                <div class="photo-selector">
+                    <label>📸 Fotoğraf ID</label>
+                    <input type="text" id="photoId" value="cmgavsbhc00064autzh1f5hk8" placeholder="Fotoğraf ID girin">
+                </div>
+
+                <div id="categoriesContainer">
+                    <div class="loading">
+                        <div class="spinner"></div>
+                        <p>İşlem tipleri yükleniyor...</p>
+                    </div>
+                </div>
+
+                <div id="paramInputs" class="param-inputs">
+                    <h3>Parametreler</h3>
+                    <div id="paramFields"></div>
+                    <button class="execute-btn" onclick="executeProcess()">🚀 İşlemi Başlat</button>
+                </div>
+            </div>
+
+            <div class="panel result-panel">
+                <h2>📊 Sonuç</h2>
+                <div id="resultContent" class="result-content">
+                    <p style="color: #666; text-align: center; padding: 60px 20px;">
+                        👈 Sol taraftan bir işlem seçin
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let selectedProcess = null;
+        let processInfo = null;
+
+        // Sistem durumunu kontrol et
+        async function checkSystemStatus() {
+            try {
+                const backendRes = await fetch('http://localhost:51511/api/health');
+                const backendData = await backendRes.json();
+                
+                const backendEl = document.getElementById('backendStatus');
+                backendEl.innerHTML = '<strong>Backend</strong><span>✅ Çalışıyor</span>';
+                backendEl.classList.remove('offline');
+
+                const comfyuiEl = document.getElementById('comfyuiStatus');
+                if (backendData.services?.comfyui?.status === 'up') {
+                    comfyuiEl.innerHTML = '<strong>ComfyUI</strong><span>✅ Çalışıyor</span>';
+                    comfyuiEl.classList.remove('offline');
+                } else {
+                    comfyuiEl.innerHTML = '<strong>ComfyUI</strong><span>❌ Çevrimdışı</span>';
+                    comfyuiEl.classList.add('offline');
+                }
+            } catch (error) {
+                document.getElementById('backendStatus').classList.add('offline');
+                document.getElementById('comfyuiStatus').classList.add('offline');
+            }
+        }
+
+        // İşlem tiplerini yükle
+        async function loadProcessTypes() {
+            try {
+                const res = await fetch('http://localhost:51511/api/post-process/types');
+                const data = await res.json();
+                
+                document.getElementById('totalProcesses').textContent = data.totalProcesses;
+                
+                renderCategories(data.categories, data.processes);
+            } catch (error) {
+                document.getElementById('categoriesContainer').innerHTML = 
+                    '<div class="alert alert-error">İşlem tipleri yüklenemedi: ' + error.message + '</div>';
+            }
+        }
+
+        // Kategorileri render et
+        function renderCategories(categories, processes) {
+            const container = document.getElementById('categoriesContainer');
+            container.innerHTML = '';
+
+            // En popüler kategorileri göster
+            const popularCategories = ['BASIC', 'PORTRAIT', 'ENHANCEMENT', 'ARTISTIC'];
+            
+            popularCategories.forEach(catName => {
+                if (!categories[catName]) return;
+                
+                const catDiv = document.createElement('div');
+                catDiv.className = 'category';
+                
+                const catProcesses = categories[catName];
+                
+                catDiv.innerHTML = `
+                    <h3>
+                        ${getCategoryIcon(catName)} ${getCategoryName(catName)}
+                        <span class="category-badge">${catProcesses.length}</span>
+                    </h3>
+                    <div class="process-buttons" id="cat-${catName}"></div>
+                `;
+                
+                container.appendChild(catDiv);
+                
+                const btnContainer = document.getElementById(`cat-${catName}`);
+                catProcesses.forEach(processType => {
+                    const process = processes[processType];
+                    const btn = document.createElement('button');
+                    btn.className = 'process-btn';
+                    btn.textContent = process.name;
+                    btn.onclick = () => selectProcess(processType, process);
+                    btnContainer.appendChild(btn);
+                });
+            });
+        }
+
+        // Kategori isimleri
+        function getCategoryName(cat) {
+            const names = {
+                'BASIC': 'Temel İşlemler',
+                'PORTRAIT': 'Portre İyileştirme',
+                'ENHANCEMENT': 'Kalite İyileştirme',
+                'ARTISTIC': 'Artistik Efektler',
+                'LIGHTING': 'Işık ve Efektler',
+                'PROFESSIONAL': 'Profesyonel',
+                'BODY': 'Vücut İşlemleri',
+                'BRANDING': 'Marka',
+                'RESTORATION': 'Restorasyon'
+            };
+            return names[cat] || cat;
+        }
+
+        // Kategori ikonları
+        function getCategoryIcon(cat) {
+            const icons = {
+                'BASIC': '🔧',
+                'PORTRAIT': '👤',
+                'ENHANCEMENT': '✨',
+                'ARTISTIC': '🎨',
+                'LIGHTING': '💡',
+                'PROFESSIONAL': '🔬',
+                'BODY': '💪',
+                'BRANDING': '🏷️',
+                'RESTORATION': '🔄'
+            };
+            return icons[cat] || '📋';
+        }
+
+        // İşlem seç
+        function selectProcess(processType, process) {
+            selectedProcess = processType;
+            processInfo = process;
+            
+            // Parametre inputlarını göster
+            const paramInputs = document.getElementById('paramInputs');
+            const paramFields = document.getElementById('paramFields');
+            
+            paramFields.innerHTML = '';
+            
+            // Gerekli parametreleri ekle
+            if (process.requiredParams && process.requiredParams.length > 0) {
+                process.requiredParams.forEach(param => {
+                    paramFields.innerHTML += createParamInput(param, process.examples);
+                });
+            }
+            
+            // Opsiyonel parametreleri ekle
+            if (process.optionalParams && process.optionalParams.length > 0) {
+                process.optionalParams.forEach(param => {
+                    paramFields.innerHTML += createParamInput(param, process.examples, true);
+                });
+            }
+            
+            // Eğer parametre yoksa basit başlat butonu göster
+            if ((!process.requiredParams || process.requiredParams.length === 0) && 
+                (!process.optionalParams || process.optionalParams.length === 0)) {
+                paramFields.innerHTML = '<p style="color: #666;">Bu işlem için parametre gerekmez.</p>';
+            }
+            
+            paramInputs.classList.add('active');
+            
+            // Sonuç panelini güncelle
+            const resultContent = document.getElementById('resultContent');
+            resultContent.innerHTML = `
+                <div class="alert alert-warning">
+                    <strong>${process.name}</strong> seçildi<br>
+                    ${process.description}<br><br>
+                    <strong>Tahmini Süre:</strong> ${process.estimatedTime}<br>
+                    <strong>Kategori:</strong> ${process.category}
+                </div>
+            `;
+        }
+
+        // Parametre input oluştur
+        function createParamInput(param, examples, optional = false) {
+            const example = examples && examples[0] ? examples[0][param] : '';
+            const label = optional ? `${param} (opsiyonel)` : param;
+            
+            if (param === 'backgroundColor' || param === 'hairColor' || param === 'borderColor') {
+                return `
+                    <div class="param-group">
+                        <label>${label}</label>
+                        <input type="color" id="param-${param}" value="${example || '#FFFFFF'}">
+                    </div>
+                `;
+            } else if (param === 'rotationAngle') {
+                return `
+                    <div class="param-group">
+                        <label>${label} (derece)</label>
+                        <input type="number" id="param-${param}" value="${example || 90}" min="-360" max="360">
+                    </div>
+                `;
+            } else if (param.includes('Level') || param.includes('Strength') || param.includes('Amount')) {
+                return `
+                    <div class="param-group">
+                        <label>${label} (0-1)</label>
+                        <input type="number" id="param-${param}" value="${example || 0.7}" min="0" max="1" step="0.1">
+                    </div>
+                `;
+            } else if (param === 'prompt' || param === 'negativePrompt') {
+                return `
+                    <div class="param-group">
+                        <label>${label}</label>
+                        <input type="text" id="param-${param}" value="${example || ''}" placeholder="Açıklama girin">
+                    </div>
+                `;
+            } else {
+                return `
+                    <div class="param-group">
+                        <label>${label}</label>
+                        <input type="text" id="param-${param}" value="${example || ''}" placeholder="${param}">
+                    </div>
+                `;
+            }
+        }
+
+        // İşlemi çalıştır
+        async function executeProcess() {
+            if (!selectedProcess) {
+                alert('Lütfen bir işlem seçin');
+                return;
+            }
+
+            const photoId = document.getElementById('photoId').value;
+            if (!photoId) {
+                alert('Lütfen Fotoğraf ID girin');
+                return;
+            }
+
+            // Parametreleri topla
+            const params = {};
+            if (processInfo.requiredParams) {
+                processInfo.requiredParams.forEach(param => {
+                    const input = document.getElementById(`param-${param}`);
+                    if (input) params[param] = input.value;
+                });
+            }
+            if (processInfo.optionalParams) {
+                processInfo.optionalParams.forEach(param => {
+                    const input = document.getElementById(`param-${param}`);
+                    if (input && input.value) params[param] = input.value;
+                });
+            }
+
+            // Loading göster
+            const resultContent = document.getElementById('resultContent');
+            resultContent.innerHTML = `
+                <div class="loading">
+                    <div class="spinner"></div>
+                    <p><strong>${processInfo.name}</strong> işlemi çalıştırılıyor...</p>
+                    <p style="color: #666; font-size: 0.9rem;">Tahmini süre: ${processInfo.estimatedTime}</p>
+                </div>
+            `;
+
+            try {
+                const response = await fetch('http://localhost:51511/api/post-process', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        photoId: photoId,
+                        processType: selectedProcess,
+                        params: params
+                    })
+                });
+
+                const result = await response.json();
+
+                if (result.success) {
+                    resultContent.innerHTML = `
+                        <div class="alert alert-success">
+                            <strong>✅ İşlem Başarılı!</strong><br>
+                            Refinement ID: ${result.refinementId}
+                        </div>
+                        ${result.outputImageUrl ? `
+                            <img src="${result.outputImageUrl}" class="result-image" alt="İşlenmiş Fotoğraf">
+                        ` : ''}
+                        <div class="result-info">
+                            <h3>İşlem Bilgisi</h3>
+                            <pre>${JSON.stringify(result, null, 2)}</pre>
+                        </div>
+                    `;
+                } else {
+                    resultContent.innerHTML = `
+                        <div class="alert alert-error">
+                            <strong>❌ İşlem Başarısız</strong><br>
+                            ${result.error}
+                        </div>
+                        <div class="result-info">
+                            <pre>${JSON.stringify(result, null, 2)}</pre>
+                        </div>
+                    `;
+                }
+            } catch (error) {
+                resultContent.innerHTML = `
+                    <div class="alert alert-error">
+                        <strong>❌ Hata Oluştu</strong><br>
+                        ${error.message}
+                    </div>
+                `;
+            }
+        }
+
+        // Sayfa yüklendiğinde
+        window.onload = () => {
+            checkSystemStatus();
+            loadProcessTypes();
+            setInterval(checkSystemStatus, 10000); // Her 10 saniyede bir kontrol et
+        };
+    </script>
+</body>
+</html>

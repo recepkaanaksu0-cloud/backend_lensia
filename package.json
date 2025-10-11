@@ -20,7 +20,13 @@
     "tunnel:stop": "sudo systemctl stop cloudflared",
     "tunnel:status": "sudo systemctl status cloudflared",
     "full-dev": "bash scripts/dev.sh",
-    "comfyui": "bash scripts/start-comfyui.sh"
+    "comfyui": "bash scripts/start-comfyui.sh",
+    "comfyui:cpu": "bash scripts/start-comfyui-cpu.sh",
+    "comfyui:install": "bash scripts/install-comfyui.sh",
+    "comfyui:gpu-setup": "bash scripts/install-pytorch-cuda.sh",
+    "comfyui:test": "python3 scripts/test-comfyui-pipeline.py",
+    "postprocess:test": "bash scripts/test-postprocess.sh",
+    "postprocess:start": "bash scripts/start-postprocess-system.sh"
   },
   "dependencies": {
     "@prisma/client": "^6.16.3",

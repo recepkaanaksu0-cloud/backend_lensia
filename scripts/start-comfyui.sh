@@ -17,13 +17,13 @@ echo -e "${BLUE}║       ComfyUI Otomatik Başlatıcı          ║${NC}"
 echo -e "${BLUE}╚════════════════════════════════════════════╝${NC}"
 echo ""
 
-# ComfyUI dizinini kontrol et
-COMFYUI_DIR="${COMFYUI_DIR:-$HOME/ComfyUI}"
+# ComfyUI dizinini kontrol et - proje içinde comfyui klasörü
+COMFYUI_DIR="./comfyui"
 
 if [ ! -d "$COMFYUI_DIR" ]; then
     echo -e "${RED}❌ ComfyUI dizini bulunamadı: $COMFYUI_DIR${NC}"
-    echo -e "${YELLOW}COMFYUI_DIR environment variable'ını ayarlayın:${NC}"
-    echo -e "  ${YELLOW}export COMFYUI_DIR=/path/to/ComfyUI${NC}"
+    echo -e "${YELLOW}Kurmak için:${NC}"
+    echo -e "  ${YELLOW}npm run comfyui:install${NC}"
     exit 1
 fi
 
@@ -55,7 +55,18 @@ if [ -d "venv" ]; then
     source venv/bin/activate
 fi
 
+# GPU kontrolü
+echo -e "${YELLOW}  GPU kontrol ediliyor...${NC}"
+if command -v nvidia-smi &> /dev/null && nvidia-smi &> /dev/null 2>&1; then
+    GPU_INFO=$(nvidia-smi --query-gpu=name --format=csv,noheader | head -1)
+    echo -e "${GREEN}  ✓ NVIDIA GPU bulundu: ${GPU_INFO}${NC}"
+    GPU_FLAG=""
+else
+    echo -e "${YELLOW}  ⚠️  GPU bulunamadı, CPU modunda çalışacak${NC}"
+    GPU_FLAG="--cpu"
+fi
+
 # ComfyUI'ı başlat
 echo -e "${GREEN}  → http://127.0.0.1:8188${NC}"
 echo ""
-python3 main.py --listen 127.0.0.1 --port 8188
+python3 main.py --listen 127.0.0.1 --port 8188 $GPU_FLAG
