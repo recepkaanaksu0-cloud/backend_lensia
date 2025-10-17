@@ -4,52 +4,36 @@ import { prisma } from '@/lib/prisma'
 import { processComfyUIJob } from '@/lib/comfyui'
 import { sendWebhookToLensia, sendCustomWebhook } from '@/lib/webhook'
 
-export async function POST(
-  request: Request,
-  { params }: { params: Promise<{ id: string }> }
-) {
-  try {
-    const { id } = await params
-    
-    // İşi veritabanından al
-    const job = await prisma.job.findUnique({
-      where: { id }
-    })
-    
-    if (!job) {
-      return NextResponse.json(
-        { error: 'İş bulunamadı' },
-        { status: 404 }
-      )
-    }
-    
-    if (job.status === 'processing') {
-      return NextResponse.json(
-        { error: 'Bu iş zaten işleniyor' },
-        { status: 400 }
-      )
-    }
-    
-    // İş durumunu "processing" olarak güncelle
+export async function POST(req: Request, { params }: { params: { id: string } }) {
+  const jobId = params.id
+  const body = await req.json()
+
+  const result = await processComfyUIJob({
+    inputImageUrl: body.inputImageUrl,
+    operation: body.operation,
+    filenamePrefix: body.filenamePrefix
+  })
+
+  if (result.success) {
+    // veritabanına outputImageUrl güncelle
     await prisma.job.update({
-      where: { id },
-      data: { status: 'processing' }
+      where: { id: jobId },
+      data: {
+        outputImageUrl: result.outputImageUrl,
+        status: 'completed',
+        updatedAt: new Date()
+      }
     })
-    
-    // ComfyUI işlemini başlat (async olarak)
-    processJobAsync(id, job)
-    
-    return NextResponse.json({
-      message: 'İş işleme alındı',
-      jobId: id
+    return Response.json({ success: true, outputImageUrl: result.outputImageUrl })
+  } else {
+    await prisma.job.update({
+      where: { id: jobId },
+      data: {
+        status: 'failed',
+        updatedAt: new Date()
+      }
     })
-    
-  } catch (error) {
-    console.error('İş işlenirken hata:', error)
-    return NextResponse.json(
-      { error: 'İş işlenirken bir hata oluştu' },
-      { status: 500 }
-    )
+    return Response.json({ success: false, error: result.error }, { status: 400 })
   }
 }
 
