@@ -175,7 +175,7 @@ export function createBackgroundRemoveWorkflow(params: WorkflowParams) {
       "inputs": {
         "image": ["1", 0]
       },
-      "class_type": "Recraft Remove Background"
+      "class_type": "Remove Background"
     },
     "3": {
       "inputs": {
