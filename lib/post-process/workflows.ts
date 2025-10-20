@@ -173,9 +173,9 @@ export function createBackgroundRemoveWorkflow(params: WorkflowParams) {
     },
     "2": {
       "inputs": {
-        "images": ["1", 0]
+        "image": ["1", 0]
       },
-      "class_type": "RemoveBackground"
+      "class_type": "Recraft Remove Background"
     },
     "3": {
       "inputs": {
@@ -457,8 +457,8 @@ export function createBackgroundColorWorkflow(params: WorkflowParams) {
  * ✨ Fotoğraf Döndürme
  */
 export function createRotateWorkflow(params: WorkflowParams) {
-  const angle = params.rotationAngle || 90
-  
+  const angle = typeof params.rotationAngle === 'number' ? params.rotationAngle : 90
+
   return {
     "1": {
       "inputs": {
@@ -470,9 +470,9 @@ export function createRotateWorkflow(params: WorkflowParams) {
     "2": {
       "inputs": {
         "image": ["1", 0],
-        "angle": angle
+        "rotation": angle // ✅ parametre adı "rotation" olabilir, node tanımına göre
       },
-      "class_type": "ImageRotate"
+      "class_type": "RotateImage" // ✅ burası kritik düzeltme
     },
     "3": {
       "inputs": {

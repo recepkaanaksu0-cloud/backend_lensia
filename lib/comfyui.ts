@@ -1,3 +1,4 @@
+console.log('🧪 processComfyUIJob başladı')
 import axios from 'axios'
 
 const COMFYUI_API_URL = process.env.COMFYUI_API_URL || 'http://127.0.0.1:8188'
@@ -36,9 +37,10 @@ export async function processComfyUIJob(params: ComfyUIJobParams): Promise<Comfy
     const workflow = createWorkflow({
       uploadedImageName,
       filenamePrefix: params.filenamePrefix,
-      operation: params.operation
+      operation: params.operation,
+      rotationAngle: typeof params.rotationAngle === 'string' ? Number(params.rotationAngle) : undefined
     })
-
+    console.log('Workflow:', JSON.stringify(workflow, null, 2))
     const promptResponse = await axios.post(`${COMFYUI_API_URL}/prompt`, {
       prompt: workflow,
       client_id: `dashboard-${Date.now()}`
@@ -62,78 +64,79 @@ export async function processComfyUIJob(params: ComfyUIJobParams): Promise<Comfy
 export function createWorkflow({
   uploadedImageName,
   filenamePrefix,
-  operation
+  operation,
+  rotationAngle
 }: {
   uploadedImageName: string
   filenamePrefix?: string
   operation?: string
+  rotationAngle?: number
 }) {
   switch (operation) {
-    case "remove_background":
-      return {
-        prompt: {
-          "1": {
-            class_type: "LoadImage",
-            inputs: { image: uploadedImageName }
-          },
-          "2": {
-            class_type: "BackgroundRemover",
-            inputs: { image: ["1", 0] }
-          },
-          "3": {
-            class_type: "SaveImage",
-            inputs: {
-              images: ["2", 0],
-              filename_prefix: filenamePrefix || "bg_removed"
-            }
+  case "remove_background":
+    return {
+      prompt: {
+        "1": {
+          class_type: "LoadImage",
+          inputs: { image: uploadedImageName }
+        },
+        "2": {
+          class_type: "BackgroundRemover",
+          inputs: { image: ["1", 0] }
+        },
+        "3": {
+          class_type: "SaveImage",
+          inputs: {
+            images: ["2", 0],
+            filename_prefix: filenamePrefix || "bg_removed"
           }
         }
       }
-      case "ImageRotate":
-  return {
-    prompt: {
-      "1": {
-        class_type: "LoadImage",
-        inputs: { 
-          image: uploadedImageName 
+    }
+
+  case "rotate":
+    return {
+      prompt: {
+        "1": {
+          class_type: "LoadImage",
+          inputs: { image: uploadedImageName }
+        },
+        "2": {
+          class_type: "RotateImage",
+          inputs: {
+            image: ["1", 0],
+            rotation: rotationAngle
+          }
+        },
+        "3": {
+          class_type: "SaveImage",
+          inputs: {
+            images: ["2", 0],
+            filename_prefix: filenamePrefix || "rotated"
+          }
         }
-      },
-      "2": {
-        class_type: "ImageRotate",
-        inputs: {
-          image: ["1", 0],
-          rotation: 90 // veya frontend'den gelen değer
-        }
-      },
-      "3": {
-        class_type: "SaveImage",
-        inputs: {
-          images: ["2", 0],
-          filename_prefix: filenamePrefix || "rotated",
-          rotation : 90
+      }
+    }
+
+  default:
+    return {
+      prompt: {
+        "1": {
+          class_type: "LoadImage",
+          inputs: { image: uploadedImageName }
+        },
+        "2": {
+          class_type: "SaveImage",
+          inputs: {
+            images: ["1", 0],
+            filename_prefix: filenamePrefix || "output"
+          }
         }
       }
     }
   }
-
-    default:
-      return {
-        prompt: {
-          "1": {
-            class_type: "LoadImage",
-            inputs: { image: uploadedImageName }
-          },
-          "2": {
-            class_type: "SaveImage",
-            inputs: {
-              images: ["1", 0],
-              filename_prefix: filenamePrefix || "output"
-            }
-          }
-        }
-      }
-  }
 }
+
 
 /**
  * Prompt tamamlanana kadar bekler ve sonucu döndürür
